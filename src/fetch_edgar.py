@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import json
 import os
+import re
 from datetime import datetime
 
 # SEC API endpoints
@@ -74,11 +75,11 @@ def extract_quarterly_data(facts_data, tags_to_extract):
     Returns:
         pd.DataFrame: Dataframe with one row per fiscal quarter containing the requested metrics
     """
-    if not facts_data or 'us-gaap' not in facts_data:
+    if not facts_data or 'facts' not in facts_data or 'us-gaap' not in facts_data.get('facts', {}):
         print("Error: Invalid or missing us-gaap data in company facts")
         return pd.DataFrame()
 
-    us_gaap_data = facts_data['us-gaap']
+    us_gaap_data = facts_data['facts']['us-gaap']
 
     # We'll store data by quarter (fiscal year, fiscal period)
     quarterly_data = {}
@@ -116,10 +117,6 @@ def extract_quarterly_data(facts_data, tags_to_extract):
         quarter_values = {}  # Key: (fy, fp), Value: (value, filed_date)
 
         for entry in entries:
-            # We only want quarterly data (fp should be Q1, Q2, Q3, or Q4)
-            if 'fp' not in entry or entry['fp'] not in ['Q1', 'Q2', 'Q3', 'Q4']:
-                continue
-
             # Extract relevant fields
             fy = entry.get('fy')
             fp = entry.get('fp')
@@ -127,12 +124,32 @@ def extract_quarterly_data(facts_data, tags_to_extract):
             end_date = entry.get('end')
             filed_date = entry.get('filed')
 
-            # Skip if missing essential data
-            if fy is None or fp is None or val is None:
+            # Skip if no value
+            if val is None:
+                continue
+
+            # Try to get quarter info - prefer fp, fallback to parsing frame
+            if fp is None or fp not in ['Q1', 'Q2', 'Q3', 'Q4']:
+                # Parse from 'frame' field (e.g., 'CY2013Q4I')
+                frame = entry.get('frame', '')
+                match = re.search(r'CY(\d{4})Q([1-4])', frame)
+                if match:
+                    fy = int(match.group(1))
+                    fp = f"Q{match.group(2)}"
+                else:
+                    continue
+
+            if fy is None or fp is None:
+                continue
+
+            # Convert fy to int if it's still a string
+            try:
+                fy = int(fy)
+            except (ValueError, TypeError):
                 continue
 
             # Create quarter key
-            quarter_key = (int(fy), fp)
+            quarter_key = (fy, fp)
 
             # If we already have a value for this quarter, keep the one with the latest filing date
             if quarter_key in quarter_values:
