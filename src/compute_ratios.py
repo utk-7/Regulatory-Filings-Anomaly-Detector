@@ -7,10 +7,8 @@ REQUIRED_FIELDS = [
     'NetIncomeLoss',
     'NetCashProvidedByUsedInOperatingActivities',
     'Assets',
-    'Revenues',
-    'AccountsReceivableNetCurrent',
     'Liabilities'
-]
+]  # Removed Revenues and AccountsReceivableNetCurrent
 
 def compute_ratios():
     """Calculate the 3 anomaly ratios per company-quarter."""
