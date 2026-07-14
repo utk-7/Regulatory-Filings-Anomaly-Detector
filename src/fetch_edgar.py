@@ -4,6 +4,7 @@ import numpy as np
 import json
 import os
 import re
+import sys
 from datetime import datetime
 
 # SEC API endpoints
@@ -192,17 +193,17 @@ def extract_quarterly_data(facts_data, tags_to_extract):
 
     return df
 
-def main():
-    """Main function to fetch KHC data and save to CSV."""
-    print("Fetching SEC financial data for Kraft Heinz (KHC)...")
+def process_ticker(ticker):
+    """Fetch data for a specific ticker and save to CSV."""
+    print(f"Fetching SEC financial data for {ticker}...")
 
-    # Get CIK for KHC
-    cik = get_cik('KHC')
+    # Get CIK for the ticker
+    cik = get_cik(ticker)
     if not cik:
-        print("Failed to get CIK for KHC. Exiting.")
-        return
+        print(f"Failed to get CIK for {ticker}. Exiting.")
+        return None
 
-    print(f"Found CIK for KHC: {cik}")
+    print(f"Found CIK for {ticker}: {cik}")
 
     # Get company facts
     facts_data = get_company_facts(cik)
@@ -233,7 +234,7 @@ def main():
     os.makedirs('data', exist_ok=True)
 
     # Save to CSV
-    output_path = 'data/khc_raw.csv'
+    output_path = f'data/{ticker.lower()}_raw.csv'
     df.to_csv(output_path, index=False)
     print(f"Data saved to {output_path}")
 
@@ -243,6 +244,25 @@ def main():
 
     print(f"\nTotal rows extracted: {len(df)}")
     print(f"Columns: {list(df.columns)}")
+
+    return df
+
+def main():
+    """Main function to fetch data for all tickers in the basket."""
+    if len(sys.argv) > 1:
+        tickers = sys.argv[1].split(',')
+    else:
+        tickers = ['KHC', 'GIS', 'CPB', 'CAG', 'MDLZ', 'HRL', 'K', 'HSY', 'SJM']
+
+    print(f"Processing {len(tickers)} tickers: {', '.join(tickers)}\n")
+
+    all_data = {}
+    for ticker in tickers:
+        df = process_ticker(ticker.strip().upper())
+        if df is not None:
+            all_data[ticker] = df
+
+    print(f"\nCompleted processing {len(all_data)} tickers successfully.")
 
 if __name__ == "__main__":
     main()
