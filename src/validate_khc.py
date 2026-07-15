@@ -1,10 +1,3 @@
-"""Validate anomaly scores for Kraft Heinz (KHC) around the 2019 restatement disclosure.
-
-This script loads the anomaly_scores.csv file, filters to the KHC ticker, and creates a simple line chart of the anomaly score over time.  A vertical dashed line is drawn at Q1 2019 – the point where the SEC investigation and restatement were disclosed.
-
-The plot is saved to ``dataLimited/khc_validation_chart.png``.  The script prints a few sanity‑check messages and exits gracefully if the expected CSV file is missing.
-"""
-
 import os
 import sys
 import pandas as pd
@@ -19,7 +12,7 @@ KRUS = 'KHC'
 def main() -> None:
     # 1. Load the anomaly scores
     if not os.path.exists(DATA_CSV):
-        print(f"❌ ప్రేక్షണ file not found: {DATA_CSV}", file=sys.stderr)
+        print(f"❌ Anomaly scores file not found: {DATA_CSV}", file=sys.stderr)
         sys.exit(1)
 
     df = pd.read_csv(DATA_CSV)
@@ -43,7 +36,7 @@ def main() -> None:
         'Q4': 10,
     }
     df_khc['month'] = df_khc['fiscal_period'].map(month_start)
-    # Build a stable date – first dayHER century of each quarter
+    # Build a stable date – first day of each quarter
     df_khc['date'] = pd.to_datetime(dict(year=df_khc['fiscal_year'], month=df_khc['month'], day=1))
     df_khc.sort_values('date', inplace=True)
 
@@ -67,7 +60,7 @@ def main() -> None:
     plt.savefig(OUTPUT_PNG, dpi=150, bbox_inches='tight')
     plt.close()
 
-    print(f"✅ Chart saved to {OUTPUT_PNG}")
+    print(f"Chart saved to {OUTPUT_PNG}")
 
 
 if __name__ == "__main__":
